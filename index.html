@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pokédex PWA - DGB LCHA</title>
+  <meta name="description" content="Pokédex de la primera generación: captura Pokémon escaneando códigos QR, consulta su información en PokéAPI y guarda tu colección en tu dispositivo." />
+  <meta name="theme-color" content="#e94343" />
+  <meta name="color-scheme" content="light" />
+
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preload" href="fonts/manrope-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="fonts/dm-mono-500-latin.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Pokédex" />
+
+
+  <!-- Tailwind CSS (copia local: funciona sin Internet y sin proceso de build) -->
+  <script src="vendor/tailwindcss.js"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            poke: {
+              red: '#e94343',
+              darkred: '#c93737',
+              gold: '#e94343',
+              ink: '#20232b',
+              muted: '#9297a2',
+              line: '#eceef2',
+              night: '#f7f8fa',
+            },
+          },
+          boxShadow: {
+            glow: '0 5px 12px rgba(233, 67, 67, 0.2)',
+            card: '0 5px 20px -12px rgba(24, 32, 51, 0.2)',
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="min-h-dvh">
+
+  <!-- Sprite de iconos (SVG reutilizables) -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="svg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-pokeball" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" fill="#ffffff" />
+      <path d="M3 12a9 9 0 0 1 18 0z" fill="#e94343" />
+      <path d="M3 12h18" stroke="#20232b" stroke-width="2" />
+      <circle cx="12" cy="12" r="9" fill="none" stroke="#20232b" stroke-width="2" />
+      <circle cx="12" cy="12" r="3.1" fill="#ffffff" stroke="#20232b" stroke-width="2" />
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.4-3.4" />
+    </symbol>
+    <symbol id="i-scan" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 9V6.5A2.5 2.5 0 0 1 6.5 4H9" />
+      <path d="M15 4h2.5A2.5 2.5 0 0 1 20 6.5V9" />
+      <path d="M20 15v2.5a2.5 2.5 0 0 1-2.5 2.5H15" />
+      <path d="M9 20H6.5A2.5 2.5 0 0 1 4 17.5V15" />
+      <path d="M7 12h10" />
+    </symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 20V4" />
+      <path d="M4 20h16" />
+      <rect x="7.5" y="12" width="3" height="5" rx="1" />
+      <rect x="12.5" y="8" width="3" height="9" rx="1" />
+      <rect x="17" y="5" width="3" height="12" rx="1" />
+    </symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <circle cx="12" cy="7.6" r="0.9" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <path d="M6 6l12 12M18 6L6 18" />
+    </symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 2 4.5 13.5H11l-1 8.5L19.5 10H13z" />
+    </symbol>
+    <symbol id="i-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 8a8 8 0 0 1 13.7-3.7L20 6.5" />
+      <path d="M20 3.5v3h-3" />
+      <path d="M20 16a8 8 0 0 1-13.7 3.7L4 17.5" />
+      <path d="M4 20.5v-3h3" />
+      <circle cx="12" cy="12" r="2.4" />
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m4.5 12.5 4.7 4.7L19.5 6.9" />
+    </symbol>
+    <symbol id="i-check-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="m8 12.2 2.7 2.7L16.4 9" />
+    </symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10.3 3.9 2.6 17.2A2 2 0 0 0 4.3 20h15.4a2 2 0 0 0 1.7-2.8L13.7 3.9a2 2 0 0 0-3.4 0Z" />
+      <path d="M12 9v4.2" />
+      <circle cx="12" cy="16.7" r="0.9" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-wifi-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m2 2 20 20" />
+      <path d="M8.6 15.2a5 5 0 0 1 6.4-.3" />
+      <path d="M5 12.2a11 11 0 0 1 4.1-2.4" />
+      <path d="M15.5 9.9a11 11 0 0 1 3.5 2.3" />
+      <path d="M2 8.6A16 16 0 0 1 7.7 5.4" />
+      <path d="M14.2 5.5a16 16 0 0 1 7.8 3.1" />
+      <circle cx="12" cy="19" r="1" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4.5" y="10" width="15" height="10" rx="2.5" />
+      <path d="M8 10V7.5a4 4 0 0 1 8 0V10" />
+      <circle cx="12" cy="15" r="1.2" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m9 5 7 7-7 7" />
+    </symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 7h16" />
+      <path d="M9 7V4.8h6V7" />
+      <path d="M6 7l1 13h10l1-13" />
+      <path d="M10 11v5M14 11v5" />
+    </symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 11a8 8 0 0 0-14.2-4.6L4 8" />
+      <path d="M4 3.5V8h4.5" />
+      <path d="M4 13a8 8 0 0 0 14.2 4.6L20 16" />
+      <path d="M20 20.5V16h-4.5" />
+    </symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 4h10v5a5 5 0 0 1-10 0z" />
+      <path d="M7 5H4v2.5A3.5 3.5 0 0 0 7.5 11" />
+      <path d="M17 5h3v2.5A3.5 3.5 0 0 1 16.5 11" />
+      <path d="M12 14v3.5M9 21h6M10 17.5h4" />
+    </symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7.5V12l3 2" />
+    </symbol>
+    <symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none" />
+    </symbol>
+    <symbol id="i-sparkles" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m12 3 1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z" />
+      <path d="M18.5 16.5 19.4 19l2.6.9-2.6.9-.9 2.5-.9-2.5-2.6-.9 2.6-.9z" />
+    </symbol>
+  </svg>
+
+  <div class="app-stage">
+    <div class="device" id="app">
+      <div class="device-screen" id="device-screen">
+        <header class="app-header">
+          <div class="brand-lockup">
+            <div class="min-w-0">
+              <p class="brand-eyebrow">REGIÓN KANTO · GEN I</p>
+              <h1 class="brand-title">Pokédex<span class="brand-period">.</span></h1>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="online-dot" class="status-dot" role="status" title="Conexión a Internet" aria-label="En línea"></span>
+            <span id="header-counter" class="counter-pill" role="status" aria-label="Pokémon capturados">0 / 151</span>
+          </div>
+        </header>
+
+        <div id="offline-banner" class="offline-banner hidden" role="status">
+          <svg class="h-4 w-4 shrink-0"><use href="#i-wifi-off"></use></svg>
+          <span class="flex-1 text-[11px] leading-tight">Sin conexión. Tu colección sigue disponible; no podrás descubrir Pokémon nuevos.</span>
+        </div>
+
+        <main id="view-root" class="view-root">
+
+          <!-- ===================== VISTA: MI POKÉDEX ===================== -->
+          <section id="view-pokedex" class="view" data-view="pokedex" aria-labelledby="pokedex-title">
+            <div class="px-4 pt-4">
+              <div class="welcome-row">
+                <div>
+                  <p class="eyebrow muted-text">TU AVENTURA COMIENZA AQUÍ</p>
+                  <h1 id="pokedex-title" class="view-title">Mi colección<span class="heading-dot">.</span></h1>
+                </div>
+                <p class="dex-count">
+                  <strong id="captured-label">0 capturados</strong>
+                  <span id="missing-label">151 por descubrir</span>
+                </p>
+              </div>
+
+              <div class="search-wrap mt-4">
+                <svg class="h-4 w-4 shrink-0 muted-text"><use href="#i-search"></use></svg>
+                <input
+                  id="search-input"
+                  type="search"
+                  class="search-input"
+                  placeholder="Buscar nombre o número…"
+                  autocomplete="off"
+                  spellcheck="false"
+                  aria-label="Buscar Pokémon"
+                />
+                <button id="search-clear" class="search-clear hidden" type="button" aria-label="Limpiar búsqueda">
+                  <svg class="h-3.5 w-3.5"><use href="#i-close"></use></svg>
+                </button>
+              </div>
+
+              <div class="segmented mt-3" role="tablist" aria-label="Filtro de la Pokédex">
+                <button type="button" class="segmented__btn is-active" data-filter="all" role="tab" aria-selected="true">Todos</button>
+                <button type="button" class="segmented__btn" data-filter="captured" role="tab" aria-selected="false">Capturados</button>
+                <button type="button" class="segmented__btn" data-filter="missing" role="tab" aria-selected="false">Faltantes</button>
+              </div>
+            </div>
+
+            <!-- Estado de carga -->
+            <div id="pokedex-loading" class="grid grid-cols-2 gap-3 px-4 pt-4" aria-hidden="true">
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+              <div class="skeleton-card"></div>
+            </div>
+
+            <!-- Estado vacío -->
+            <div id="pokedex-empty" class="empty-state mx-4 mt-4 hidden">
+              <div class="empty-state__ball" aria-hidden="true">
+                <svg class="h-14 w-14"><use href="#i-pokeball"></use></svg>
+              </div>
+              <h2 class="mt-4 text-[13px] font-bold leading-relaxed ink-text">TU POKÉDEX ESTÁ VACÍA</h2>
+              <p class="mx-auto mt-3 max-w-[250px] text-xs leading-relaxed muted-text">
+                Escanea tu primer código QR para comenzar tu aventura y descubrir a los 151 Pokémon de la primera generación.
+              </p>
+              <button type="button" class="btn-primary mt-5" data-action="open-scanner">
+                <svg class="h-4 w-4"><use href="#i-scan"></use></svg>
+                Escanear mi primer Pokémon
+              </button>
+            </div>
+
+            <!-- Estado de error -->
+            <div id="pokedex-error" class="error-state mx-4 mt-4 hidden" role="alert">
+              <div class="flex items-start gap-3">
+                <svg class="mt-0.5 h-5 w-5 shrink-0 accent-text"><use href="#i-alert"></use></svg>
+                <div class="flex-1">
+                  <p class="text-sm font-semibold ink-text">Ocurrió un problema</p>
+                  <p id="pokedex-error-message" class="mt-1 text-xs leading-relaxed muted-text">
+                    No fue posible consultar la información del Pokémon.
+                  </p>
+                  <button type="button" class="btn-ghost mt-3" data-action="retry">
+                    <svg class="h-3.5 w-3.5"><use href="#i-refresh"></use></svg>
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <p id="pokedex-results" class="px-4 pt-4 text-[10px] uppercase tracking-[0.14em] muted-text"></p>
+
+            <div id="pokedex-grid" class="pokedex-grid"></div>
+
+            <div id="pokedex-noresults" class="no-results mx-4 mt-4 hidden">
+              <svg class="mx-auto h-8 w-8 muted-text"><use href="#i-search"></use></svg>
+              <p id="noresults-title" class="mt-3 text-sm font-semibold">Sin resultados</p>
+              <p id="noresults-text" class="mt-1 text-xs muted-text">Prueba con otro nombre o número de Pokédex.</p>
+            </div>
+          </section>
+
+          <!-- ===================== VISTA: PROGRESO ===================== -->
+          <section id="view-progress" class="view hidden" data-view="progress" aria-labelledby="progress-title">
+            <div class="px-4 pt-4">
+              <p class="eyebrow muted-text">ESTADÍSTICAS DE ENTRENADOR</p>
+              <h1 id="progress-title" class="view-title">Tu progreso<span class="heading-dot">.</span></h1>
+              <p class="intro-subtitle">Cada descubrimiento te acerca a completar Kanto.</p>
+            </div>
+
+            <div class="progress-hero mx-4 mt-4">
+              <div id="progress-ring" class="progress-ring">
+                <svg class="progress-ring__svg" viewBox="0 0 120 120" aria-hidden="true">
+                  <circle class="progress-ring__track" cx="60" cy="60" r="52" pathLength="100"></circle>
+                  <circle id="progress-ring-fill" class="progress-ring__fill" cx="60" cy="60" r="52" pathLength="100"></circle>
+                </svg>
+                <div class="progress-ring__inner">
+                  <span id="progress-percent" class="progress-ring__value">0%</span>
+                  <span class="progress-ring__label">Completado</span>
+                </div>
+              </div>
+              <div class="progress-hero-copy">
+                <p class="progress-hero__eyebrow">POKÉMON CAPTURADOS</p>
+                <h2 class="progress-hero__count"><span id="progress-count">0</span> <small>/ 151</small></h2>
+                <p id="progress-message" class="progress-hero__message">Escanea un código QR para comenzar tu colección.</p>
+              </div>
+            </div>
+
+            <div class="stats-grid mx-4 mt-3">
+              <div class="stat-card">
+                <span class="stat-icon red">✦</span>
+                <span class="stat-label">Registrados</span>
+                <strong class="stat-value" id="stat-captured">0</strong>
+                <small>Pokémon en tu Pokédex</small>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon green">⌁</span>
+                <span class="stat-label">Por descubrir</span>
+                <strong class="stat-value" id="stat-missing">151</strong>
+                <small>Esperando ser encontrados</small>
+              </div>
+              <div class="stat-card">
+                <span class="stat-icon blue">◎</span>
+                <span class="stat-label">Avance</span>
+                <strong class="stat-value" id="stat-percent">0%</strong>
+                <small>De la primera generación</small>
+              </div>
+            </div>
+
+            <div class="panel-card mx-4 mt-3 p-4">
+              <div class="flex items-center justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] muted-text">Progreso total</p>
+                <span class="text-[11px] font-bold accent-text" id="progress-fraction">0 / 151</span>
+              </div>
+              <div class="progress-bar mt-3" role="progressbar" aria-valuemin="0" aria-valuemax="151" aria-valuenow="0" id="progress-bar">
+                <span id="progress-bar-fill" class="progress-bar__fill" style="width: 0%"></span>
+              </div>
+              <div class="mt-4 flex items-center justify-between border-t soft-divider pt-3">
+                <span class="text-[11px] muted-text">Recompensa final</span>
+                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold accent-text">
+                  <svg class="h-3.5 w-3.5"><use href="#i-trophy"></use></svg>
+                  151 / 151
+                </span>
+              </div>
+            </div>
+
+            <div class="panel-card mx-4 mt-3 p-4">
+              <div class="flex items-center justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] muted-text">Tipos capturados</p>
+                <span class="text-[10px] muted-text" id="type-count">0 tipos</span>
+              </div>
+              <div id="type-breakdown" class="mt-3 space-y-2.5">
+                <p class="text-xs muted-text">Aún no hay tipos registrados.</p>
+              </div>
+            </div>
+
+            <div class="motivation-card mx-4 mt-3">
+              <span aria-hidden="true">✧</span>
+              <div>
+                <strong>¡Sigue explorando!</strong>
+                <p>Escanea nuevos códigos QR para ampliar tu colección.</p>
+              </div>
+            </div>
+
+            <div class="panel-card mx-4 mt-3 p-4">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.14em] muted-text">Hitos</p>
+              <div id="milestones" class="mt-3 grid grid-cols-3 gap-2"></div>
+            </div>
+
+            <div class="panel-card mx-4 mt-3 p-4">
+              <div class="flex items-center justify-between">
+                <p class="text-[11px] font-semibold uppercase tracking-[0.14em] muted-text">Últimas capturas</p>
+                <svg class="h-3.5 w-3.5 muted-text"><use href="#i-clock"></use></svg>
+              </div>
+              <div id="recent-list" class="mt-3 space-y-2">
+                <p class="text-xs muted-text">Todavía no has capturado ningún Pokémon.</p>
+              </div>
+            </div>
+
+            <div class="mx-4 mt-3 pb-28">
+              <button type="button" class="btn-danger w-full" data-action="reset-collection">
+                <svg class="h-4 w-4"><use href="#i-trash"></use></svg>
+                Reiniciar colección
+              </button>
+              <p class="mt-2 text-center text-[10px] leading-relaxed muted-text">
+                Al borrar los datos del navegador también se pierde la colección.
+              </p>
+            </div>
+          </section>
+
+          <!-- ===================== VISTA: ACERCA DE ===================== -->
+          <section id="view-about" class="view hidden" data-view="about" aria-labelledby="about-title">
+            <div class="px-4 pt-4">
+              <p class="eyebrow muted-text">UN PROYECTO PARA ENTRENADORES</p>
+              <h1 id="about-title" class="view-title">Acerca de<span class="heading-dot">.</span></h1>
+              <p class="intro-subtitle">Una nueva forma de descubrir y coleccionar Pokémon de Kanto.</p>
+            </div>
+
+            <div class="about-visual mx-4 mt-4">
+              <div class="about-pokeball" aria-hidden="true"><span></span></div>
+              <p>POKÉDEX KANTO</p>
+              <small>EDICIÓN DE ENTRENADOR · 001—151</small>
+            </div>
+
+            <div class="panel-card mx-4 mt-3 p-4">
+              <p class="eyebrow">SOBRE LA APLICACIÓN</p>
+              <h2 class="about-title">Descubre. Escanea. Colecciona.</h2>
+              <p class="about-copy">
+                Aplicación web progresiva inspirada en la Pokédex original. Los Pokémon no aparecen
+                automáticamente: hay que encontrar su código QR y escanearlo para registrarlos.
+                La colección se guarda únicamente en este dispositivo.
+              </p>
+              <div class="mini-facts">
+                <div class="mini-fact">
+                  <span class="mini-fact__value">151</span>
+                  <span class="mini-fact__label">Pokémon</span>
+                </div>
+                <div class="mini-fact">
+                  <span class="mini-fact__value">1.ª</span>
+                  <span class="mini-fact__label">Generación</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card authors-card mx-4 mt-3 p-4">
+              <p class="eyebrow">AUTORES</p>
+              <div class="author-row">
+                <span class="author-avatar">DGB</span>
+                <div>
+                  <strong>Daniel Alejandro Gutiérrez Bojórquez</strong>
+                  <small>Desarrollo y diseño</small>
+                </div>
+                <span class="author-star">✦</span>
+              </div>
+              <div class="author-row">
+                <span class="author-avatar second">LCHA</span>
+                <div>
+                  <strong>Luis Carlos Hernandez Ayala</strong>
+                  <small>Desarrollo y diseño</small>
+                </div>
+                <span class="author-star">✦</span>
+              </div>
+              <p class="authors-note">Proyecto final de la materia Apps móviles · 2026</p>
+            </div>
+
+            <div class="panel-card mx-4 mt-3 p-4">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.14em] muted-text">Tecnologías</p>
+              <div class="mt-3 flex flex-wrap gap-1.5">
+                <span class="tag">HTML5</span>
+                <span class="tag">JavaScript</span>
+                <span class="tag">Tailwind CSS</span>
+                <span class="tag">PokéAPI</span>
+                <span class="tag">localStorage</span>
+                <span class="tag">html5-qrcode</span>
+                <span class="tag">Service Worker</span>
+                <span class="tag">PWA</span>
+              </div>
+              <div class="mt-4 space-y-2 border-t soft-divider pt-3 text-[11px]">
+                <div class="flex items-center justify-between gap-3">
+                  <span class="muted-text">Formato del QR</span>
+                  <code class="chunk-code">pokemon:25</code>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="muted-text">Rango válido</span>
+                  <span class="font-semibold ink-text">#001 – #151</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="muted-text">Almacenamiento</span>
+                  <span class="font-semibold ink-text">localStorage</span>
+                </div>
+                <div class="flex items-center justify-between gap-3">
+                  <span class="muted-text">Versión</span>
+                  <span class="font-semibold ink-text">1.0.22</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel-card mx-4 mt-3 p-4">
+              <p class="text-[11px] font-semibold uppercase tracking-[0.14em] muted-text">
+                Cómo instalar la app
+              </p>
+              <ul class="mt-3 space-y-3">
+                <li>
+                  <p class="text-xs font-semibold ink-text">Android · Chrome</p>
+                  <p class="mt-0.5 text-[11px] leading-relaxed muted-text">Menú <span class="ink-text">⋮</span> → «Instalar aplicación» o «Añadir a pantalla de inicio».</p>
+                </li>
+                <li>
+                  <p class="text-xs font-semibold ink-text">iPhone · Safari</p>
+                  <p class="mt-0.5 text-[11px] leading-relaxed muted-text">Botón Compartir → «Añadir a pantalla de inicio».</p>
+                </li>
+                <li>
+                  <p class="text-xs font-semibold ink-text">Computadora · Chrome / Edge</p>
+                  <p class="mt-0.5 text-[11px] leading-relaxed muted-text">Icono de instalación en la barra de direcciones.</p>
+                </li>
+              </ul>
+            </div>
+          </section>
+        </main>
+
+        <!-- Botón de acción principal -->
+        <button id="fab" class="fab" type="button" aria-label="Escanear un código QR">
+          <span class="fab__pulse" aria-hidden="true"></span>
+          <span>Escanear</span>
+          <b aria-hidden="true">＋</b>
+        </button>
+
+        <!-- Navegación inferior -->
+        <nav class="bottom-nav" aria-label="Navegación principal">
+          <button type="button" class="nav-item is-active" data-nav="pokedex" aria-current="page">
+            <span class="nav-icon" aria-hidden="true">▦</span>
+            <span>Pokédex</span>
+          </button>
+          <button type="button" class="nav-item" data-nav="progress">
+            <span class="nav-icon" aria-hidden="true">◔</span>
+            <span>Progreso</span>
+          </button>
+          <button type="button" class="nav-item" data-nav="about">
+            <span class="nav-icon" aria-hidden="true">ⓘ</span>
+            <span>Acerca de</span>
+          </button>
+        </nav>
+
+        <div id="toast-root" aria-live="polite" aria-atomic="false"></div>
+        <div id="sheet-root" class="hidden"></div>
+        <div id="modal-root" class="hidden"></div>
+      </div>
+    </div>
+    <p class="app-credit">Pokédex PWA · Daniel G. &amp; Luis H. · 2026</p>
+  </div>
+
+  <noscript>
+    <p style="padding: 24px; color: #fff; text-align: center; font-family: sans-serif;">
+      Esta Pokédex necesita JavaScript para funcionar.
+    </p>
+  </noscript>
+
+  <script src="vendor/html5-qrcode.min.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

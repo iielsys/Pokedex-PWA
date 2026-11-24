@@ -1,0 +1,57 @@
+{
+  "name": "Pokédex PWA - DGB LCHA",
+  "short_name": "Pokédex",
+  "description": "Pokédex de la primera generación: escanea códigos QR, consulta la PokéAPI y guarda tu colección en tu dispositivo.",
+  "id": "./",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "portrait",
+  "lang": "es-MX",
+  "dir": "ltr",
+  "background_color": "#eceef2",
+  "theme_color": "#e94343",
+  "categories": ["entertainment", "games"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Escanear un Pokémon",
+      "short_name": "Escanear",
+      "description": "Abre el lector de códigos QR",
+      "url": "./index.html?scan=1",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}
